@@ -404,6 +404,19 @@
         const lines = (await file.text()).split(/\r?\n/).map(l => l.trim()).filter(Boolean);
         const hdr = lines[0].split(',').map(h => h.trim().toUpperCase());
         const idx = name => hdr.findIndex(h => h === name || h.endsWith(name));
+        const speedCol = hdr.findIndex(h => h.includes('85TH') || h === 'P85');
+        if (speedCol >= 0 && idx('EBL') < 0) {
+          const speeds = lines.slice(1).map(l => Number(l.split(',')[speedCol])).filter(v => Number.isFinite(v) && v > 0);
+          if (!speeds.length) throw new Error('No valid 85th-percentile speeds found.');
+          const p85 = String(Math.max(...speeds).toFixed(1));
+          appState.isd.speed = appState.turnLeft.speed = appState.turnRight.speed = appState.geom.speed = p85;
+          syncInputsFromState();
+          renderResults();
+          saveState();
+          $('tmc-csv-status').textContent = `Imported 85th-percentile speed (${p85} mph) across all modules.`;
+          e.target.value = '';
+          return;
+        }
         const cols = ['EBL','EBT','EBR','WBL','WBT','WBR','NBL','NBT','NBR','SBL','SBT','SBR'];
         const totals = Object.fromEntries(cols.map(c => [c, 0]));
         const rows = lines.slice(1).map(l => l.split(',').map(v => v.trim()));

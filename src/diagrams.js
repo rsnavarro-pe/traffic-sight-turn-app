@@ -70,6 +70,9 @@
     if (medianPx > 0) {
       const my = roadTop + (lanes / 2) * lanePx;
       s += `<rect x="16" y="${my}" width="${W - 32}" height="${medianPx}" fill="#d8d2c3" stroke="#b5ae9d" stroke-width="1"/>`;
+      if (isd.twoStageEligible) {
+        s += `<rect x="${cx - 14}" y="${my + 2}" width="28" height="${medianPx - 4}" rx="3" fill="#2b6e52" fill-opacity="0.22" stroke="#2b6e52" stroke-width="1.2" stroke-dasharray="3 2"/>`;
+      }
     } else {
       const cyRoad = roadTop + roadH / 2;
       s += `<line x1="16" y1="${cyRoad}" x2="${W - 16}" y2="${cyRoad}" stroke="#b36b00" stroke-width="1.5" stroke-dasharray="10 6"/>`;
