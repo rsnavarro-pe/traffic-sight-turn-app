@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSN · Sight Distance &amp; Turning Lane Analysis</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#project">Skip to workspace</a>
+<div class="container">
+  <header class="brand-bar" aria-label="Application header">
+    <div class="brand-mark" id="brand-mark">RSN</div>
+    <div class="brand-copy">
+      <div class="brand-product" id="brand-product">Sight Distance &amp; Turning Lane Analysis</div>
+      <div class="brand-sub" id="build-info">AASHTO / FDOT FDM 212.11 · Florida Greenbook · NCHRP Report 457</div>
+    </div>
+  </header>
+
+  <div class="error-banner" id="error-banner" role="alert" hidden></div>
+
+  <header class="hero">
+    <div class="eyebrow">AASHTO · FDOT FDM 212.11 · NCHRP Report 457 · TRB Access Management</div>
+    <h1>Sight Distance Triangle &amp; Turning Lane Analysis</h1>
+    <p class="hero-lead">Evaluate minor-road stop-controlled intersection sight distance (Cases B1–B3), clear sight triangles with obstruction checks, driveway decision sight distance, NCHRP 457 left/right turn-lane warrants (2-lane &amp; 4-lane), and turn-bay geometry sizing.</p>
+    <div class="actions" style="margin-top: var(--space-md);">
+      <button type="button" class="btn is-selected" id="load-haines-example">Load Haines City example</button>
+      <button type="button" class="btn" id="new-study">Reset defaults</button>
+    </div>
+    <div class="hero-metrics" aria-label="Live analysis summary" style="margin-top: var(--space-md);">
+      <div><span>Study</span><strong id="hero-project">Untitled study</strong></div>
+      <div><span>ISD (LT / RT)</span><strong id="hero-isd">—</strong></div>
+      <div><span>Turn-lane screen</span><strong id="hero-turns">—</strong></div>
+    </div>
+  </header>
+
+  <nav class="workspace-nav" aria-label="Workflow sections">
+    <a href="#project" class="is-current">1. Project</a>
+    <a href="#sec-isd">2. Sight Triangle</a>
+    <a href="#sec-dsd">3. Decision SD</a>
+    <a href="#sec-turns">4. Turn Warrants</a>
+    <a href="#sec-geom">5. Bay Geometry</a>
+    <a href="#sec-summary">6. Summary</a>
+    <a href="#sec-selfcheck">Checks</a>
+  </nav>
+
+  <section id="project">
+    <div class="workspace-heading">
+      <div><h2>1. Project setup</h2><p>Identify the intersection or driveway and save a portable JSON snapshot.</p></div>
+      <div class="actions">
+        <button type="button" class="btn" id="open-project">Open study file</button>
+        <button type="button" class="btn is-selected" id="save-project">Save study file</button>
+      </div>
+    </div>
+    <input type="file" id="project-file" accept=".json,application/json" hidden>
+    <div class="workspace-card">
+      <div class="field-grid">
+        <label class="stack-field"><span>Project / study title</span><input type="text" data-bind="project.title" placeholder="e.g. Baker Ave E Driveway Study"></label>
+        <label class="stack-field"><span>Intersection / driveway</span><input type="text" data-bind="project.location" placeholder="Major Rd &amp; Minor Rd / Driveway"></label>
+        <label class="stack-field"><span>Governing standard</span><input type="text" data-bind="project.jurisdiction"></label>
+        <label class="stack-field"><span>Analyst</span><input type="text" data-bind="project.analyst" placeholder="Initials or name"></label>
+        <label class="stack-field"><span>Study date</span><input type="date" data-bind="project.date"></label>
+      </div>
+      <p class="muted small" id="storage-status" role="status">Working changes are saved in this browser.</p>
+    </div>
+  </section>
+
+  <section id="sec-isd">
+    <div class="workspace-heading">
+      <div><h2>2. Intersection Sight Distance (ISD) &amp; Sight Triangle</h2><p>Stop-controlled minor road (Case B1 Left Turn, Case B2 Right Turn, Case B3 Crossing) per FDOT FDM 212.11 / Florida Greenbook Ch. 3 / AASHTO.</p></div>
+      <div class="actions"><button type="button" class="btn" data-download-svg="diag-sight">Download SVG</button></div>
+    </div>
+    <div class="workspace-card">
+      <div class="field-grid">
+        <label class="stack-field"><span>Major-road design speed (mph)</span><input type="number" min="10" max="80" step="5" data-bind="isd.speed"></label>
+        <label class="stack-field"><span>Design vehicle</span>
+          <select data-bind="isd.vehicle">
+            <option value="passenger">Passenger Car (7.5 / 6.5 s)</option>
+            <option value="single_unit">Single-Unit Truck (9.5 / 8.5 s)</option>
+            <option value="combination">Combination Truck (11.5 / 10.5 s)</option>
+          </select>
+        </label>
+        <label class="stack-field"><span>Major-road through lanes</span>
+          <select data-bind="isd.majorLanes">
+            <option value="2">2 lanes (undivided)</option>
+            <option value="4">4 lanes</option>
+            <option value="6">6 lanes</option>
+          </select>
+        </label>
+        <label class="stack-field"><span>Lanes crossed (Case B1 / B3)</span><input type="number" min="1" max="8" step="1" data-bind="isd.lanesCrossed"></label>
+        <label class="stack-field"><span>Minor-road approach grade (%)</span><input type="number" min="-15" max="15" step="0.5" data-bind="isd.gradePct"></label>
+        <label class="stack-field"><span>Major-road grade for SSD (%)</span><input type="number" min="-15" max="15" step="0.5" data-bind="isd.majorGradePct"></label>
+        <label class="stack-field"><span>Decision point setback a (ft)</span><input type="number" min="10" max="40" step="0.5" data-bind="isd.setbackFt"></label>
+        <label class="stack-field"><span>Lane width (ft)</span><input type="number" min="9" max="16" step="0.5" data-bind="isd.laneWidthFt"></label>
+        <label class="stack-field"><span>Median width (ft, 0 if undivided)</span><input type="number" min="0" max="60" step="1" data-bind="isd.medianWidthFt"></label>
+      </div>
+
+      <div id="isd-results" style="margin-top: var(--space-md);"></div>
+
+      <details style="margin-top: var(--space-md);">
+        <summary>Optional sight-triangle obstruction check (trees, signs, fences, buildings)</summary>
+        <p class="small muted">Enter obstruction coordinates measured from the minor-road centerline (x along major road, ft) and from the conflicting approaching lane centerline toward the minor road (y, ft).</p>
+        <div class="field-grid">
+          <label class="stack-field"><span>Left-looking obstruction x (ft)</span><input type="number" min="0" max="2000" step="1" data-bind="isd.obsLeftX" placeholder="e.g. 120"></label>
+          <label class="stack-field"><span>Left-looking obstruction y (ft)</span><input type="number" min="0" max="200" step="0.5" data-bind="isd.obsLeftY" placeholder="e.g. 16"></label>
+          <label class="stack-field"><span>Right-looking obstruction x (ft)</span><input type="number" min="0" max="2000" step="1" data-bind="isd.obsRightX" placeholder="e.g. 140"></label>
+          <label class="stack-field"><span>Right-looking obstruction y (ft)</span><input type="number" min="0" max="200" step="0.5" data-bind="isd.obsRightY" placeholder="e.g. 18"></label>
+        </div>
+      </details>
+
+      <p class="screen-result" id="isd-obstruction-status" role="status" style="margin-top: var(--space-sm);"></p>
+      <div id="diag-sight" style="margin-top: var(--space-md);"></div>
+    </div>
+  </section>
+
+  <section id="sec-dsd">
+    <div class="workspace-heading">
+      <div><h2>3. Decision Sight Distance (DSD) for Driveway Maneuver</h2><p>TRB Access Management Application Guidelines (Eq. 3-4 &amp; 3-5) for major-road vehicles reacting to driveway maneuvers.</p></div>
+    </div>
+    <div class="workspace-card">
+      <div class="field-grid">
+        <label class="stack-field"><span>Major-road design speed (mph)</span><input type="number" min="15" max="80" step="5" data-bind="dsd.speed"></label>
+        <label class="stack-field"><span>Development area (PRT preset)</span>
+          <select data-bind="dsd.area">
+            <option value="rural">Rural (3.0 s)</option>
+            <option value="suburban">Suburban (6.0 s)</option>
+            <option value="urban">Urban (9.1 s)</option>
+          </select>
+        </label>
+        <label class="stack-field"><span>Perception-reaction time (s)</span><input type="number" min="1" max="15" step="0.1" data-bind="dsd.prt"></label>
+        <label class="stack-field"><span>Driveway activity</span>
+          <select data-bind="dsd.activity">
+            <option value="right_in">Right Turn In (20% speed drop)</option>
+            <option value="right_out">Right Turn Out (12% speed drop)</option>
+            <option value="left_in">Left Turn In (10% speed drop)</option>
+            <option value="left_out">Left Turn Out (10% speed drop)</option>
+          </select>
+        </label>
+        <label class="stack-field"><span>Speed reduction (%)</span><input type="number" min="0" max="100" step="1" data-bind="dsd.speedReductionPct"></label>
+        <label class="stack-field"><span>Deceleration rate (ft/s²)</span><input type="number" min="3" max="15" step="0.1" data-bind="dsd.decelRate"></label>
+      </div>
+      <div id="dsd-results" style="margin-top: var(--space-md);"></div>
+    </div>
+  </section>
+
+  <section id="sec-turns">
+    <div class="workspace-heading">
+      <div><h2>4. Turn-Lane Warrant Screening (NCHRP Report 457)</h2><p>Screen unstopped major-road approaches at two-way stop-controlled intersections or driveways (Figures 2-5 &amp; 2-6).</p></div>
+    </div>
+    <div class="turn-grid">
+      <article class="workspace-card turn-card">
+        <h3>Left-turn bay (Figure 2-5)</h3>
+        <p class="small muted">Supports both 2-lane and 4-lane major roadways.</p>
+        <div class="field-grid">
+          <label class="stack-field"><span>Approach / scenario</span><input type="text" data-bind="turnLeft.approach" placeholder="e.g. EB Major Rd"></label>
+          <label class="stack-field"><span>Major-road geometry</span>
+            <select data-bind="turnLeft.lanes">
+              <option value="2">2-lane roadway</option>
+              <option value="4">4-lane roadway</option>
+            </select>
+          </label>
+          <label class="stack-field lt-2lane-only"><span>Operating speed (mph)</span><input type="number" min="1" max="79.9" step="1" data-bind="turnLeft.speed"></label>
+          <label class="stack-field lt-2lane-only"><span>Left turns (% of advancing)</span><input type="number" min="0" max="99.9" step="0.1" data-bind="turnLeft.share"></label>
+          <label class="stack-field lt-4lane-only" hidden><span>Left-turning volume V<sub>L</sub> (veh/h)</span><input type="number" min="0" max="5000" step="1" data-bind="turnLeft.leftTurns"></label>
+          <label class="stack-field"><span>Advancing volume V<sub>A</sub> (veh/h)</span><input type="number" min="0" max="5000" step="1" data-bind="turnLeft.advance"></label>
+          <label class="stack-field"><span>Opposing volume V<sub>O</sub> (veh/h)</span><input type="number" min="0" max="5000" step="1" data-bind="turnLeft.oppose"></label>
+        </div>
+        <details style="margin-top: var(--space-sm);">
+          <summary>Calibration constants</summary>
+          <div class="field-grid">
+            <label class="stack-field"><span>Avg left-turn time t<sub>1</sub> (s)</span><input type="number" min="0.5" max="20" step="0.1" data-bind="turnLeft.turnTime"></label>
+            <label class="stack-field"><span>Critical headway G<sub>c</sub> (s)</span><input type="number" min="1" max="20" step="0.1" data-bind="turnLeft.gap"></label>
+            <label class="stack-field lt-2lane-only"><span>Clearance time t<sub>e</sub> (s)</span><input type="number" min="0.5" max="20" step="0.1" data-bind="turnLeft.clear"></label>
+          </div>
+        </details>
+        <div class="turn-svg" id="turn-svg-left" style="margin: .8rem 0;"></div>
+        <p class="screen-result" id="turn-result-left" role="status"></p>
+      </article>
+
+      <article class="workspace-card turn-card">
+        <h3>Right-turn bay (Figure 2-6)</h3>
+        <p class="small muted">NCHRP 457 / FDOT Multimodal Access Management Guidebook.</p>
+        <div class="field-grid">
+          <label class="stack-field"><span>Approach / scenario</span><input type="text" data-bind="turnRight.approach" placeholder="e.g. WB Major Rd"></label>
+          <label class="stack-field"><span>Major-road geometry</span>
+            <select data-bind="turnRight.lanes">
+              <option value="2">2-lane roadway</option>
+              <option value="4">4-lane roadway</option>
+            </select>
+          </label>
+          <label class="stack-field"><span>Operating speed (mph)</span><input type="number" min="10" max="80" step="5" data-bind="turnRight.speed"></label>
+          <label class="stack-field"><span>Major-road approach vol (veh/h)</span><input type="number" min="0" max="10000" step="1" data-bind="turnRight.volume"></label>
+          <label class="stack-field"><span>Right-turn volume (veh/h)</span><input type="number" min="0" max="10000" step="1" data-bind="turnRight.turns"></label>
+        </div>
+        <div class="turn-svg" id="turn-svg-right" style="margin: .8rem 0;"></div>
+        <p class="screen-result" id="turn-result-right" role="status"></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="sec-geom">
+    <div class="workspace-heading">
+      <div><h2>5. Turn-Lane Length &amp; Bay Geometry (FDOT FDM 212 / AASHTO)</h2><p>Size taper, deceleration, and queue storage lengths when a turn lane is warranted or provided.</p></div>
+      <div class="actions"><button type="button" class="btn" data-download-svg="diag-geom">Download SVG</button></div>
+    </div>
+    <div class="workspace-card">
+      <div class="field-grid">
+        <label class="stack-field"><span>Design speed (mph)</span><input type="number" min="25" max="70" step="5" data-bind="geom.speed"></label>
+        <label class="stack-field"><span>Peak turning volume (veh/h)</span><input type="number" min="0" max="2000" step="1" data-bind="geom.turnVolume"></label>
+        <label class="stack-field"><span>Intersection control</span>
+          <select data-bind="geom.controlType">
+            <option value="unsignalized">Unsignalized (2-min rule)</option>
+            <option value="signal">Signalized (1.5× cycle arrival)</option>
+          </select>
+        </label>
+        <label class="stack-field" id="geom-cycle-wrap" hidden><span>Signal cycle length (s)</span><input type="number" min="30" max="240" step="5" data-bind="geom.cycleSec"></label>
+        <label class="stack-field"><span>Design vehicle length (ft)</span>
+          <select data-bind="geom.vehLengthFt">
+            <option value="25">25 ft (Passenger Car)</option>
+            <option value="40">40 ft (Single-Unit Truck)</option>
+            <option value="65">65 ft (Combination Truck)</option>
+          </select>
+        </label>
+        <label class="stack-field"><span>Bay width (ft)</span><input type="number" min="10" max="16" step="1" data-bind="geom.bayWidthFt"></label>
+        <label class="stack-field"><span>Approach taper length (ft)</span><input type="number" min="25" max="300" step="5" data-bind="geom.taperFt"></label>
+      </div>
+      <div id="geom-results" style="margin-top: var(--space-md);"></div>
+      <div id="diag-geom" style="margin-top: var(--space-md);"></div>
+    </div>
+  </section>
+
+  <section id="sec-summary">
+    <div class="workspace-heading">
+      <div><h2>6. Screening summary</h2><p>One-page engineering summary ready to copy into a Traffic Impact Study or print to PDF.</p></div>
+      <div class="actions">
+        <button type="button" class="btn" id="summary-copy">Copy Markdown</button>
+        <button type="button" class="btn" id="summary-download">Download .md</button>
+        <button type="button" class="btn is-selected" id="summary-print">Print / Save PDF</button>
+      </div>
+    </div>
+    <p class="small muted" id="summary-status" role="status"></p>
+    <div class="workspace-card" id="summary-body"></div>
+  </section>
+
+  <section id="sec-selfcheck">
+    <details class="workspace-card" id="selfcheck-card">
+      <summary>Self-checks and workbook validation</summary>
+      <p class="small">Verifies ISD (FDOT FDM 212.11), Decision Sight Distance (TRB Access Management), NCHRP 457 2-lane/4-lane turn warrants, sight-triangle obstruction math, and JSON snapshot round-trip against the reference spreadsheets.</p>
+      <div class="actions"><button type="button" class="btn is-selected" id="run-selfcheck">Run self-checks</button></div>
+      <ul class="selfcheck" id="selfcheck-results" aria-live="polite"></ul>
+    </details>
+  </section>
+
+  <footer class="workspace-footer">
+    <p class="small muted">All calculations run locally in your browser. Use <em>Save study file</em> to archive or share a <code>.sight-turn.json</code> snapshot.</p>
+  </footer>
+</div>
+
+<script defer src="src/sight-engine.js"></script>
+<script defer src="src/turn-engine.js"></script>
+<script defer src="src/diagrams.js"></script>
+<script defer src="src/app.js"></script>
+<script defer src="src/checks.js"></script>
+</body>
+</html>
