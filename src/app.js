@@ -187,7 +187,8 @@
           <div><span>Crossing ISD (Case B3)</span><strong>${fmt(isd.isdCross, 1)} ft</strong><small>t<sub>g</sub> = ${fmt(isd.tgCross, 2)} s</small></div>
           <div><span>Stopping SD (Controlling)</span><strong>${fmt(isd.ssd, 1)} ft</strong><small>${Math.abs(isd.ssdDowngrade - isd.ssdUpgrade) > 0.5 ? `Down ${fmt(isd.ssdDowngrade, 0)} / Up ${fmt(isd.ssdUpgrade, 0)} ft` : 't = 2.5 s, a = 11.2 ft/s²'}</small></div>
         </div>
-        <p class="small muted">Triangle minor-road vertices: Left-looking <strong>a = ${fmt(isd.aLeftLook, 1)} ft</strong> (b = ${fmt(isd.bLeftLook, 0)} ft) · Right-looking <strong>a = ${fmt(isd.aRightLook, 1)} ft</strong> (b = ${fmt(isd.bRightLook, 0)} ft).</p>
+        <p class="small muted">Triangle minor-road vertices: Left-looking <strong>a = ${fmt(isd.aLeftLook, 1)} ft</strong> (b = ${fmt(isd.bLeftLook, 0)} ft)${isd.bRightLook > 0 ? ` · Right-looking <strong>a = ${fmt(isd.aRightLook, 1)} ft</strong> (b = ${fmt(isd.bRightLook, 0)} ft)` : ' · Right-in/right-out (Case B2 only)'}.</p>
+        ${isd.twoStageEligible ? `<p class="small muted"><strong>Two-stage crossing eligible</strong> (median ${fmt(isd.medianWidthFt, 0)} ft &ge; ${isd.medianStoreReqFt} ft ${esc(isd.vehicleLabel)}): Stage 1 (to median) = <strong>${fmt(isd.isdStage1, 1)} ft</strong> · Stage 2 (from median) = <strong>${fmt(isd.isdStage2, 1)} ft</strong>.</p>` : ''}
       `;
     } else {
       $('isd-results').innerHTML = `<p class="screen-result">${esc(isd.error)}</p>`;
@@ -393,6 +394,47 @@
       syncInputsFromState();
       renderResults();
       saveState();
+    });
+
+    $('tmc-csv-btn')?.addEventListener('click', () => $('tmc-csv-file').click());
+    $('tmc-csv-file')?.addEventListener('change', async e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const lines = (await file.text()).split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const hdr = lines[0].split(',').map(h => h.trim().toUpperCase());
+        const idx = name => hdr.findIndex(h => h === name || h.endsWith(name));
+        const cols = ['EBL','EBT','EBR','WBL','WBT','WBR','NBL','NBT','NBR','SBL','SBT','SBR'];
+        const totals = Object.fromEntries(cols.map(c => [c, 0]));
+        const rows = lines.slice(1).map(l => l.split(',').map(v => v.trim()));
+        // Find peak 4 consecutive rows if >= 4 rows, else sum all rows
+        const win = rows.length >= 4 ? 4 : rows.length;
+        let bestSum = -1, bestStart = 0;
+        for (let i = 0; i <= rows.length - win; i++) {
+          let s = 0;
+          for (let j = 0; j < win; j++) cols.forEach(c => { const k = idx(c); if (k >= 0) s += Number(rows[i + j][k]) || 0; });
+          if (s > bestSum) { bestSum = s; bestStart = i; }
+        }
+        for (let j = 0; j < win; j++) cols.forEach(c => { const k = idx(c); if (k >= 0) totals[c] += Number(rows[bestStart + j][k]) || 0; });
+        const dir = $('tmc-major-dir')?.value || 'EB';
+        const adv = dir === 'EB' ? totals.EBL + totals.EBT + totals.EBR : dir === 'WB' ? totals.WBL + totals.WBT + totals.WBR : dir === 'NB' ? totals.NBL + totals.NBT + totals.NBR : totals.SBL + totals.SBT + totals.SBR;
+        const opp = dir === 'EB' ? totals.WBL + totals.WBT + totals.WBR : dir === 'WB' ? totals.EBL + totals.EBT + totals.EBR : dir === 'NB' ? totals.SBL + totals.SBT + totals.SBR : totals.NBL + totals.NBT + totals.NBR;
+        const lt = totals[dir + 'L'] || 0;
+        const rt = totals[dir + 'R'] || 0;
+        appState.turnLeft.advance = String(adv);
+        appState.turnLeft.oppose = String(opp);
+        appState.turnLeft.leftTurns = String(lt);
+        if (adv > 0) appState.turnLeft.share = String((lt / adv * 100).toFixed(2));
+        appState.turnRight.volume = String(adv);
+        appState.turnRight.turns = String(rt);
+        syncInputsFromState();
+        renderResults();
+        saveState();
+        $('tmc-csv-status').textContent = `Imported peak-hour ${dir} approach: Advancing ${adv} veh/h (LT ${lt}, RT ${rt}), Opposing ${opp} veh/h.`;
+      } catch (err) {
+        $('tmc-csv-status').textContent = 'Could not parse CSV: ' + err.message;
+      }
+      e.target.value = '';
     });
 
     $('new-study')?.addEventListener('click', () => {

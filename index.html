@@ -203,6 +203,23 @@
         <p class="screen-result" id="turn-result-right" role="status"></p>
       </article>
     </div>
+    <details class="workspace-card" style="margin-top: var(--space-md);">
+      <summary>Optional: Import peak-hour turning-movement CSV</summary>
+      <p class="small muted">Upload a CSV with standard movement columns (<code>EBL, EBT, EBR, WBL, WBT, WBR, NBL, NBT, NBR, SBL, SBT, SBR</code>) to find the peak 4-interval hour and populate advancing, opposing, left-turn, and right-turn volumes.</p>
+      <div class="actions">
+        <label class="stack-field"><span>Major approach</span>
+          <select id="tmc-major-dir">
+            <option value="EB">Eastbound (EB)</option>
+            <option value="WB">Westbound (WB)</option>
+            <option value="NB">Northbound (NB)</option>
+            <option value="SB">Southbound (SB)</option>
+          </select>
+        </label>
+        <button type="button" class="btn" id="tmc-csv-btn">Upload TMC CSV</button>
+        <input type="file" id="tmc-csv-file" accept=".csv,.txt,text/csv,text/plain" hidden>
+      </div>
+      <p class="small muted" id="tmc-csv-status" role="status"></p>
+    </details>
   </section>
 
   <section id="sec-geom">

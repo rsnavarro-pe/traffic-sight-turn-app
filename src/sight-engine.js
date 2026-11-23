@@ -6,9 +6,9 @@
   'use strict';
 
   const ISD_BASE_GAP = {
-    passenger: { left: 7.5, right: 6.5, cross: 6.5, label: 'Passenger Car' },
-    single_unit: { left: 9.5, right: 8.5, cross: 8.5, label: 'Single-Unit Truck' },
-    combination: { left: 11.5, right: 10.5, cross: 10.5, label: 'Combination Truck' }
+    passenger: { left: 7.5, right: 6.5, cross: 6.5, lengthFt: 20, label: 'Passenger Car' },
+    single_unit: { left: 9.5, right: 8.5, cross: 8.5, lengthFt: 30, label: 'Single-Unit Truck' },
+    combination: { left: 11.5, right: 10.5, cross: 10.5, lengthFt: 74, label: 'Combination Truck' }
   };
 
   /**
@@ -78,6 +78,14 @@
     const bLeftLook = accessType === 'riro' ? isdRight : Math.max(isdLeft, isdRight);
     const bRightLook = accessType === 'riro' ? 0 : Math.max(isdLeft, isdCross);
 
+    // Divided-highway two-stage crossing eligibility (AASHTO / FDOT FDM 212.11)
+    const twoStageEligible = accessType === 'full' && majorLanes >= 4 && medianWidthFt >= base.lengthFt;
+    const stageLanes = Math.max(1, halfLanes);
+    const tgStage1 = base.left + Math.max(0, stageLanes - 1) * perExtraLane + tgLeftGradeAdj;
+    const tgStage2 = base.left + Math.max(0, stageLanes - 1) * perExtraLane;
+    const isdStage1 = 1.47 * speed * tgStage1;
+    const isdStage2 = 1.47 * speed * tgStage2;
+
     return {
       valid: true,
       speed,
@@ -110,7 +118,11 @@
       aLeftLook,
       aRightLook,
       bLeftLook,
-      bRightLook
+      bRightLook,
+      twoStageEligible,
+      medianStoreReqFt: base.lengthFt,
+      isdStage1,
+      isdStage2
     };
   }
 
