@@ -137,6 +137,10 @@
       : [71.42927888933085, -1.106699124662079, 0.0045996480980963, -9.257194000251868, 0.15031632641649545, -0.0006419911009248072];
     const limit = Math.exp(b0 + b1 * kph + b2 * kph * kph + (c0 + c1 * kph + c2 * kph * kph) * Math.log(volume));
     const warranted = turns > limit;
+    const notes = [];
+    if (speed * 1.609 > 100) notes.push('Speed capped at 100 km/h (~62 mph) per NCHRP 457.');
+    if (speed >= 45 && turns >= 40) notes.push('FDOT Access Mgmt note: ≥45 mph with ≥40 right-turns/h typically warrants a right-turn lane.');
+    else if (speed >= 50 && turns >= 20) notes.push('FDOT Access Mgmt note: ≥50 mph with ≥20 right-turns/h may warrant a right-turn lane.');
     return {
       complete: true,
       lanes,
@@ -145,7 +149,7 @@
       actual: turns,
       limit,
       status: warranted ? 'Right-turn bay warranted' : 'Right-turn bay NOT warranted',
-      note: speed * 1.609 > 100 ? 'Speed capped at 100 km/h (~62 mph) per NCHRP 457.' : ''
+      note: notes.join(' ')
     };
   }
 

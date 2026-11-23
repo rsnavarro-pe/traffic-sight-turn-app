@@ -60,7 +60,20 @@ assert.equal(geom.decelOnlyFt, 240);
 assert.equal(geom.storageFt, 75); // 90*2/60 = 3 veh -> 75 ft
 assert.equal(geom.totalLengthFt, 365);
 
-// 9. SVG generation
+// 9. Two-stage divided median & RIRO mode
+const isdDiv = SightEngine.computeISD({
+  speed: 45, vehicle: 'passenger', majorLanes: 4, lanesCrossed: 3, medianWidthFt: 22, accessType: 'full'
+});
+assert.equal(isdDiv.twoStageEligible, true);
+assert.ok(isdDiv.isdStage1 < isdDiv.isdLeft);
+
+const isdRiro = SightEngine.computeISD({
+  speed: 30, vehicle: 'passenger', majorLanes: 2, lanesCrossed: 2, accessType: 'riro'
+});
+assert.equal(isdRiro.bRightLook, 0);
+assert.ok(Math.abs(isdRiro.bLeftLook - 286.65) < 0.05);
+
+// 10. SVG generation
 const svgSight = Diagrams.sightTriangleSvg(isd, { ...obs, x: 100, y: 10 }, { ...clr, x: 100, y: 20 });
 assert.ok(svgSight.startsWith('<svg') && svgSight.includes('Left ISD: 353 ft'));
 const svgGeom = Diagrams.turnGeometrySvg(geom);
