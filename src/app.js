@@ -107,6 +107,44 @@
     geom: { speed: '45', turnVolume: '85', controlType: 'unsignalized', cycleSec: '90', vehLengthFt: '40', bayWidthFt: '12', taperFt: '50' }
   };
 
+  const RURAL_55_EXAMPLE = {
+    project: {
+      title: 'High-Speed Rural 2-Lane Highway — Freight / Truck Access',
+      location: 'SR-60 & Industrial Driveway (55 mph)',
+      jurisdiction: 'FDOT FDM 212.11 / NCHRP 457 / TRB Access Mgmt',
+      analyst: 'RSN',
+      date: '2026-11-23'
+    },
+    isd: {
+      speed: '55', vehicle: 'combination', accessType: 'full', majorLanes: '2', lanesCrossed: '2',
+      gradePct: '4', majorGradePct: '2', setbackFt: '14.5', laneWidthFt: '12', medianWidthFt: '0',
+      obsLeftX: '300', obsLeftY: '20', obsRightX: '350', obsRightY: '20'
+    },
+    dsd: { speed: '55', area: 'rural', prt: '3.0', activity: 'right_in', speedReductionPct: '20', decelRate: '9.9' },
+    turnLeft: { approach: 'EB SR-60 Left Turn', lanes: '2', speed: '55', share: '9.4', advance: '480', oppose: '420', leftTurns: '45', turnTime: '3.0', gap: '5.0', clear: '1.9' },
+    turnRight: { approach: 'WB SR-60 Right Turn', lanes: '2', speed: '55', volume: '420', turns: '55' },
+    geom: { speed: '55', turnVolume: '55', controlType: 'unsignalized', cycleSec: '90', vehLengthFt: '65', bayWidthFt: '12', taperFt: '50' }
+  };
+
+  const RIRO_URBAN_EXAMPLE = {
+    project: {
+      title: 'Urban Right-In / Right-Out (RIRO) Commercial Driveway',
+      location: 'Urban 4-Lane Corridor (40 mph)',
+      jurisdiction: 'FDOT FDM 212.11 / TRB Access Mgmt',
+      analyst: 'RSN',
+      date: '2026-11-23'
+    },
+    isd: {
+      speed: '40', vehicle: 'passenger', accessType: 'riro', majorLanes: '4', lanesCrossed: '1',
+      gradePct: '0', majorGradePct: '0', setbackFt: '14.5', laneWidthFt: '12', medianWidthFt: '0',
+      obsLeftX: '180', obsLeftY: '16', obsRightX: '', obsRightY: ''
+    },
+    dsd: { speed: '40', area: 'urban', prt: '9.1', activity: 'right_in', speedReductionPct: '20', decelRate: '7.2' },
+    turnLeft: { approach: 'Restricted (RIRO)', lanes: '4', speed: '40', share: '0', advance: '520', oppose: '480', leftTurns: '0', turnTime: '4.0', gap: '6.0', clear: '1.9' },
+    turnRight: { approach: 'WB Right-In Approach', lanes: '4', speed: '40', volume: '520', turns: '65' },
+    geom: { speed: '40', turnVolume: '65', controlType: 'unsignalized', cycleSec: '90', vehLengthFt: '25', bayWidthFt: '12', taperFt: '50' }
+  };
+
   let appState = structuredClone(DEFAULT_STATE);
 
   function esc(v) {
@@ -372,6 +410,20 @@
 
     $('load-4lane-example')?.addEventListener('click', () => {
       appState = structuredClone(FOUR_LANE_EXAMPLE);
+      syncInputsFromState();
+      renderResults();
+      saveState();
+    });
+
+    $('load-rural-55-example')?.addEventListener('click', () => {
+      appState = structuredClone(RURAL_55_EXAMPLE);
+      syncInputsFromState();
+      renderResults();
+      saveState();
+    });
+
+    $('load-riro-example')?.addEventListener('click', () => {
+      appState = structuredClone(RIRO_URBAN_EXAMPLE);
       syncInputsFromState();
       renderResults();
       saveState();
