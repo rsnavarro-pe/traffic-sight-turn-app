@@ -1195,6 +1195,17 @@ summary { color: var(--brand-primary); }
   border-color: #783923;
   color: #ffffff;
 }
+.workspace-nav a.is-current {
+  background: #90472D;
+  border-color: #90472D;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(144, 71, 45, 0.3);
+}
+.workspace-nav a.is-current:hover {
+  background: #783923;
+  border-color: #783923;
+  color: #ffffff;
+}
 .diagram-svg {
   width: 100%;
   height: auto;

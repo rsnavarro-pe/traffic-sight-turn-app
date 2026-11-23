@@ -28,6 +28,11 @@
   function setupNavHighlight() {
     const links = [...document.querySelectorAll('.workspace-nav a')];
     const targets = links.map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+    links.forEach(link => {
+      link.addEventListener('click', () => {
+        links.forEach(l => l.classList.toggle('is-current', l === link));
+      });
+    });
     if (!('IntersectionObserver' in window) || !targets.length) return;
     const obs = new IntersectionObserver(entries => {
       for (const entry of entries) {
