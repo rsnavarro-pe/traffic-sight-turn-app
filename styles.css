@@ -1185,6 +1185,16 @@ summary { color: var(--brand-primary); }
 .turn-card h3 { font-size: 1.05rem; }
 .stack-field { font-size: 0.8125rem; }
 .stack-field input, .stack-field select { font-size: 0.875rem; padding: 0.4rem 0.55rem; }
+.btn.is-selected {
+  background: #90472D;
+  border-color: #90472D;
+  color: #ffffff;
+}
+.btn.is-selected:hover {
+  background: #783923;
+  border-color: #783923;
+  color: #ffffff;
+}
 .diagram-svg {
   width: 100%;
   height: auto;

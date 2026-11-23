@@ -401,8 +401,15 @@
       saveState();
     });
 
+    function setActiveScenario(activeId) {
+      ['load-haines-example', 'load-4lane-example', 'load-rural-55-example', 'load-riro-example'].forEach(id => {
+        $(id)?.classList.toggle('is-selected', id === activeId);
+      });
+    }
+
     $('load-haines-example')?.addEventListener('click', () => {
       appState = structuredClone(HAINES_CITY_EXAMPLE);
+      setActiveScenario('load-haines-example');
       syncInputsFromState();
       renderResults();
       saveState();
@@ -410,6 +417,7 @@
 
     $('load-4lane-example')?.addEventListener('click', () => {
       appState = structuredClone(FOUR_LANE_EXAMPLE);
+      setActiveScenario('load-4lane-example');
       syncInputsFromState();
       renderResults();
       saveState();
@@ -417,6 +425,7 @@
 
     $('load-rural-55-example')?.addEventListener('click', () => {
       appState = structuredClone(RURAL_55_EXAMPLE);
+      setActiveScenario('load-rural-55-example');
       syncInputsFromState();
       renderResults();
       saveState();
@@ -424,6 +433,7 @@
 
     $('load-riro-example')?.addEventListener('click', () => {
       appState = structuredClone(RIRO_URBAN_EXAMPLE);
+      setActiveScenario('load-riro-example');
       syncInputsFromState();
       renderResults();
       saveState();
@@ -504,6 +514,7 @@
 
     $('new-study')?.addEventListener('click', () => {
       appState = structuredClone(DEFAULT_STATE);
+      setActiveScenario(null);
       syncInputsFromState();
       renderResults();
       saveState();
