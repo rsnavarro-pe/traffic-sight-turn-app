@@ -25,6 +25,7 @@
     <p class="hero-lead">Evaluate minor-road stop-controlled intersection sight distance (Cases B1–B3), clear sight triangles with obstruction checks, driveway decision sight distance, NCHRP 457 left/right turn-lane warrants (2-lane &amp; 4-lane), and turn-bay geometry sizing.</p>
     <div class="actions" style="margin-top: var(--space-md);">
       <button type="button" class="btn is-selected" id="load-haines-example">Load Haines City example</button>
+      <button type="button" class="btn" id="load-4lane-example">Load 4-lane arterial example</button>
       <button type="button" class="btn" id="new-study">Reset defaults</button>
     </div>
     <div class="hero-metrics" aria-label="Live analysis summary" style="margin-top: var(--space-md);">
@@ -80,6 +81,12 @@
             <option value="combination">Combination Truck (11.5 / 10.5 s)</option>
           </select>
         </label>
+        <label class="stack-field"><span>Access / control type</span>
+          <select data-bind="isd.accessType">
+            <option value="full">Full Access (Cases B1 + B2 + B3)</option>
+            <option value="riro">Right-In / Right-Out (Case B2 only)</option>
+          </select>
+        </label>
         <label class="stack-field"><span>Major-road through lanes</span>
           <select data-bind="isd.majorLanes">
             <option value="2">2 lanes (undivided)</option>
@@ -88,7 +95,7 @@
           </select>
         </label>
         <label class="stack-field"><span>Lanes crossed (Case B1 / B3)</span><input type="number" min="1" max="8" step="1" data-bind="isd.lanesCrossed"></label>
-        <label class="stack-field"><span>Minor-road approach grade (%)</span><input type="number" min="-15" max="15" step="0.5" data-bind="isd.gradePct"></label>
+        <label class="stack-field"><span>Minor-road grade (% &middot; + upgrade)</span><input type="number" min="-15" max="15" step="0.5" data-bind="isd.gradePct"></label>
         <label class="stack-field"><span>Major-road grade for SSD (%)</span><input type="number" min="-15" max="15" step="0.5" data-bind="isd.majorGradePct"></label>
         <label class="stack-field"><span>Decision point setback a (ft)</span><input type="number" min="10" max="40" step="0.5" data-bind="isd.setbackFt"></label>
         <label class="stack-field"><span>Lane width (ft)</span><input type="number" min="9" max="16" step="0.5" data-bind="isd.laneWidthFt"></label>
@@ -161,7 +168,7 @@
           </label>
           <label class="stack-field lt-2lane-only"><span>Operating speed (mph)</span><input type="number" min="1" max="79.9" step="1" data-bind="turnLeft.speed"></label>
           <label class="stack-field lt-2lane-only"><span>Left turns (% of advancing)</span><input type="number" min="0" max="99.9" step="0.1" data-bind="turnLeft.share"></label>
-          <label class="stack-field lt-4lane-only" hidden><span>Left-turning volume V<sub>L</sub> (veh/h)</span><input type="number" min="0" max="5000" step="1" data-bind="turnLeft.leftTurns"></label>
+          <label class="stack-field"><span>Left-turning volume V<sub>L</sub> (veh/h)</span><input type="number" min="0" max="5000" step="1" data-bind="turnLeft.leftTurns"></label>
           <label class="stack-field"><span>Advancing volume V<sub>A</sub> (veh/h)</span><input type="number" min="0" max="5000" step="1" data-bind="turnLeft.advance"></label>
           <label class="stack-field"><span>Opposing volume V<sub>O</sub> (veh/h)</span><input type="number" min="0" max="5000" step="1" data-bind="turnLeft.oppose"></label>
         </div>
@@ -201,7 +208,11 @@
   <section id="sec-geom">
     <div class="workspace-heading">
       <div><h2>5. Turn-Lane Length &amp; Bay Geometry (FDOT FDM 212 / AASHTO)</h2><p>Size taper, deceleration, and queue storage lengths when a turn lane is warranted or provided.</p></div>
-      <div class="actions"><button type="button" class="btn" data-download-svg="diag-geom">Download SVG</button></div>
+      <div class="actions">
+        <button type="button" class="btn" id="sync-geom-left">Sync from Left-Turn</button>
+        <button type="button" class="btn" id="sync-geom-right">Sync from Right-Turn</button>
+        <button type="button" class="btn" data-download-svg="diag-geom">Download SVG</button>
+      </div>
     </div>
     <div class="workspace-card">
       <div class="field-grid">
@@ -234,6 +245,7 @@
       <div><h2>6. Screening summary</h2><p>One-page engineering summary ready to copy into a Traffic Impact Study or print to PDF.</p></div>
       <div class="actions">
         <button type="button" class="btn" id="summary-copy">Copy Markdown</button>
+        <button type="button" class="btn" id="summary-copy-html">Copy Table (Word)</button>
         <button type="button" class="btn" id="summary-download">Download .md</button>
         <button type="button" class="btn is-selected" id="summary-print">Print / Save PDF</button>
       </div>

@@ -56,10 +56,13 @@
     const isdCross = 1.47 * speed * tgCross;
 
     // Stopping Sight Distance (AASHTO Green Book / FDOT FDM 210)
-    // SSD = 1.47 * V * 2.5 + V^2 / (30 * ((11.2 / 32.2) + G))
-    const G = (Number(params.majorGradePct) || 0) / 100;
-    const decelTerm = Math.max(0.05, (11.2 / 32.2) + G);
-    const ssd = 1.47 * speed * 2.5 + (speed * speed) / (30 * decelTerm);
+    // Controlling two-way SSD uses downgrade (-|G|), with upgrade (+|G|) also reported
+    const absG = Math.abs(Number(params.majorGradePct) || 0) / 100;
+    const decelUp = Math.max(0.05, (11.2 / 32.2) + absG);
+    const decelDown = Math.max(0.05, (11.2 / 32.2) - absG);
+    const ssdUpgrade = 1.47 * speed * 2.5 + (speed * speed) / (30 * decelUp);
+    const ssdDowngrade = 1.47 * speed * 2.5 + (speed * speed) / (30 * decelDown);
+    const ssd = ssdDowngrade;
 
     // Sight Triangle Leg Offsets from Minor-Road Decision Point
     // Near-side approaching lane center (from left): setback + 0.5 * laneWidth
@@ -69,10 +72,11 @@
     const aRightLook = setbackFt + halfLanes * laneWidthFt + medianWidthFt + 0.5 * laneWidthFt;
 
     // Controlling sight distances along major road:
-    // Looking left: vehicles approaching in near lane affect both Left Turn (B1) and Right Turn (B2)
-    const bLeftLook = Math.max(isdLeft, isdRight);
-    // Looking right: vehicles approaching in far lane affect Left Turn (B1) and Crossing (B3)
-    const bRightLook = Math.max(isdLeft, isdCross);
+    // Full access: Looking left uses max(B1, B2), looking right uses max(B1, B3).
+    // RIRO (Right-In/Right-Out): Only Case B2 looking left applies.
+    const accessType = params.accessType === 'riro' ? 'riro' : 'full';
+    const bLeftLook = accessType === 'riro' ? isdRight : Math.max(isdLeft, isdRight);
+    const bRightLook = accessType === 'riro' ? 0 : Math.max(isdLeft, isdCross);
 
     return {
       valid: true,
@@ -85,6 +89,7 @@
       laneWidthFt,
       medianWidthFt,
       majorLanes,
+      accessType,
       tgLeftBase,
       tgLeftLaneAdj,
       tgLeftGradeAdj,
@@ -100,6 +105,8 @@
       tgCross,
       isdCross,
       ssd,
+      ssdUpgrade,
+      ssdDowngrade,
       aLeftLook,
       aRightLook,
       bLeftLook,

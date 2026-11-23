@@ -48,7 +48,8 @@
     const farLaneY = roadTop + lanePx * 0.5;
 
     const leftTargetX = Math.max(22, eyeX - isd.bLeftLook * scaleX);
-    const rightTargetX = Math.min(W - 22, eyeX + isd.bRightLook * scaleX);
+    const hasRight = isd.bRightLook > 0;
+    const rightTargetX = hasRight ? Math.min(W - 22, eyeX + isd.bRightLook * scaleX) : eyeX;
 
     const leftColor = obsLeft?.obstructed ? '#b42318' : '#1f4e5f';
     const rightColor = obsRight?.obstructed ? '#b42318' : '#b36b00';
@@ -80,7 +81,9 @@
     // Left-looking sight triangle (shaded)
     s += `<polygon points="${eyeX},${eyeY} ${leftTargetX},${nearLaneY} ${eyeX},${nearLaneY}" fill="${leftColor}" fill-opacity="0.16" stroke="${leftColor}" stroke-width="2"/>`;
     // Right-looking sight triangle (shaded)
-    s += `<polygon points="${eyeX},${eyeY} ${rightTargetX},${farLaneY} ${eyeX},${farLaneY}" fill="${rightColor}" fill-opacity="0.14" stroke="${rightColor}" stroke-width="2"/>`;
+    if (hasRight) {
+      s += `<polygon points="${eyeX},${eyeY} ${rightTargetX},${farLaneY} ${eyeX},${farLaneY}" fill="${rightColor}" fill-opacity="0.14" stroke="${rightColor}" stroke-width="2"/>`;
+    }
 
     // Driver eye decision point
     s += `<circle cx="${eyeX}" cy="${eyeY}" r="5" fill="#17181a"/>`;
@@ -88,16 +91,18 @@
 
     // Approaching vehicle targets
     s += `<circle cx="${leftTargetX}" cy="${nearLaneY}" r="4.5" fill="${leftColor}"/>`;
-    s += `<circle cx="${rightTargetX}" cy="${farLaneY}" r="4.5" fill="${rightColor}"/>`;
+    if (hasRight) s += `<circle cx="${rightTargetX}" cy="${farLaneY}" r="4.5" fill="${rightColor}"/>`;
 
     // Dimension callouts along top
     s += `<line x1="${leftTargetX}" y1="68" x2="${eyeX}" y2="68" stroke="${leftColor}" stroke-width="1.5" marker-start="url(#sd-arrow)" marker-end="url(#sd-arrow)"/>`;
     s += `<rect x="${(leftTargetX + eyeX) / 2 - 58}" y="52" width="116" height="20" rx="3" fill="#ffffff" stroke="${leftColor}" stroke-width="1"/>`;
     s += `<text x="${(leftTargetX + eyeX) / 2}" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="${leftColor}">Left ISD: ${fmt(isd.bLeftLook, 0)} ft</text>`;
 
-    s += `<line x1="${eyeX}" y1="38" x2="${rightTargetX}" y2="38" stroke="${rightColor}" stroke-width="1.5" marker-start="url(#sd-arrow)" marker-end="url(#sd-arrow)"/>`;
-    s += `<rect x="${(eyeX + rightTargetX) / 2 - 60}" y="22" width="120" height="20" rx="3" fill="#ffffff" stroke="${rightColor}" stroke-width="1"/>`;
-    s += `<text x="${(eyeX + rightTargetX) / 2}" y="36" text-anchor="middle" font-size="11" font-weight="600" fill="${rightColor}">Right ISD: ${fmt(isd.bRightLook, 0)} ft</text>`;
+    if (hasRight) {
+      s += `<line x1="${eyeX}" y1="38" x2="${rightTargetX}" y2="38" stroke="${rightColor}" stroke-width="1.5" marker-start="url(#sd-arrow)" marker-end="url(#sd-arrow)"/>`;
+      s += `<rect x="${(eyeX + rightTargetX) / 2 - 60}" y="22" width="120" height="20" rx="3" fill="#ffffff" stroke="${rightColor}" stroke-width="1"/>`;
+      s += `<text x="${(eyeX + rightTargetX) / 2}" y="36" text-anchor="middle" font-size="11" font-weight="600" fill="${rightColor}">Right ISD: ${fmt(isd.bRightLook, 0)} ft</text>`;
+    }
 
     // Obstruction markers if provided
     if (obsLeft?.applicable) {
@@ -124,10 +129,10 @@
   }
 
   /**
-   * Turn-lane warrant bar + schematic SVG for Left or Right turn bay.
+   * Turn-lane warrant NCHRP 457 curve plot for Left or Right turn bay.
    */
-  function turnWarrantSvg(side, res) {
-    const W = 520, H = 170;
+  function turnWarrantSvg(side, res, inputs) {
+    const W = 520, H = 220;
     const isLeft = side === 'left';
     if (!res || !res.complete) {
       return `<svg viewBox="0 0 ${W} ${H}" class="diagram-svg" role="img" aria-label="Turn lane warrant diagram">
@@ -136,30 +141,83 @@
       </svg>`;
     }
 
-    const actual = Number(res.actual) || 0;
-    const limit = Number.isFinite(res.limit) ? res.limit : Math.max(actual * 1.5, 100);
-    const maxVal = Math.max(actual, limit, 10) * 1.15;
-    const barX = 24, barW = W - 48, barY = 74, barH = 26;
-    const actualPx = Math.min(barW, (actual / maxVal) * barW);
-    const limitPx = Math.min(barW, (limit / maxVal) * barW);
-    const fillCol = res.warranted ? '#b42318' : '#2b6e52';
+    const TE = typeof window !== 'undefined' ? window.TurnEngine : require('./turn-engine.js');
+    const padL = 56, padR = 20, padT = 38, padB = 38;
+    const pW = W - padL - padR, pH = H - padT - padB;
+    const ptCol = res.warranted ? '#b42318' : '#2b6e52';
 
-    let s = `<svg viewBox="0 0 ${W} ${H}" class="diagram-svg" role="img" aria-label="${isLeft ? 'Left' : 'Right'}-turn warrant gauge">`;
-    s += `<rect width="${W}" height="${H}" fill="#faf9f5" rx="6"/>`;
-    s += `<text x="24" y="30" font-size="13" font-weight="600" fill="#17181a">${isLeft ? 'Left-Turn' : 'Right-Turn'} Bay Screen (${res.lanes}-Lane Major Road)</text>`;
-    s += `<text x="24" y="50" font-size="12" fill="${fillCol}" font-weight="600">${esc(res.status)}</text>`;
+    let xLabel = '', yLabel = '', xMax = 1000, yMax = 100, ptX = 0, ptY = 0;
+    const curvePts = [];
 
-    // Track
-    s += `<rect x="${barX}" y="${barY}" width="${barW}" height="${barH}" rx="4" fill="#e6e2d6"/>`;
-    // Actual bar
-    s += `<rect x="${barX}" y="${barY}" width="${actualPx}" height="${barH}" rx="4" fill="${fillCol}" fill-opacity="0.82"/>`;
-    // Threshold marker
-    if (Number.isFinite(res.limit)) {
-      const lx = barX + limitPx;
-      s += `<line x1="${lx}" y1="${barY - 8}" x2="${lx}" y2="${barY + barH + 8}" stroke="#17181a" stroke-width="2.5"/>`;
-      s += `<text x="${lx}" y="${barY + barH + 24}" text-anchor="middle" font-size="11" font-weight="600" fill="#17181a">Threshold: ${fmt(limit, 1)} veh/h</text>`;
+    if (isLeft && res.lanes === 2 && TE && inputs) {
+      const sp = Number(inputs.speed) || 30, sh = (Number(inputs.share) || 10) / 100;
+      const t1 = Number(inputs.turnTime) || 3, gc = Number(inputs.gap) || 5, te = Number(inputs.clear) || 1.9;
+      ptX = Number(inputs.oppose) || 0;
+      ptY = Number(inputs.advance) || 0;
+      xMax = Math.max(800, Math.ceil(ptX / 200) * 200 + 200);
+      for (let x = 0; x <= xMax; x += xMax / 40) {
+        const y = TE.leftLimit2Lane(sp, sh, x, t1, gc, te);
+        if (Number.isFinite(y)) curvePts.push([x, y]);
+      }
+      yMax = Math.max(800, Math.ceil(Math.max(ptY, res.limit || 0) * 1.2 / 200) * 200);
+      xLabel = 'Opposing Volume V_O (veh/h)';
+      yLabel = 'Advancing V_A';
+    } else if (isLeft && res.lanes === 4 && TE && inputs) {
+      const t1 = Number(inputs.turnTime) || 4, gc = Number(inputs.gap) || 6;
+      ptX = Number(inputs.oppose) || 0;
+      ptY = res.actual || 0;
+      xMax = Math.max(1000, Math.ceil(ptX / 200) * 200 + 200);
+      for (let x = 50; x <= xMax; x += xMax / 40) {
+        const y = TE.leftLimit4Lane(x, t1, gc).limitVL;
+        if (Number.isFinite(y)) curvePts.push([x, y]);
+      }
+      yMax = Math.max(80, Math.ceil(Math.max(ptY, res.limit || 0) * 1.25 / 20) * 20);
+      xLabel = 'Opposing Volume V_O (veh/h)';
+      yLabel = 'Left Turns V_L';
+    } else if (!isLeft && TE && inputs) {
+      const sp = Number(inputs.speed) || 30, lanes = res.lanes || 2;
+      ptX = Number(inputs.volume) || 0;
+      ptY = Number(inputs.turns) || 0;
+      xMax = Math.max(1200, Math.ceil(ptX / 200) * 200 + 200);
+      for (let x = 120; x <= xMax; x += xMax / 40) {
+        const y = TE.rightLimit(sp, lanes, x);
+        if (Number.isFinite(y) && y < 2000) curvePts.push([x, y]);
+      }
+      yMax = Math.max(100, Math.ceil(Math.max(ptY, Math.min(res.limit || 0, 500)) * 1.3 / 20) * 20);
+      xLabel = 'Approach Volume (veh/h)';
+      yLabel = 'Right Turns V_R';
     }
-    s += `<text x="${barX}" y="${barY + barH + 24}" font-size="11" fill="#56585c">Observed: ${fmt(actual, 0)} veh/h</text>`;
+
+    const sx = x => padL + Math.min(1, Math.max(0, x / xMax)) * pW;
+    const sy = y => padT + pH - Math.min(1, Math.max(0, y / yMax)) * pH;
+
+    let s = `<svg viewBox="0 0 ${W} ${H}" class="diagram-svg" role="img" aria-label="${isLeft ? 'Left' : 'Right'}-turn NCHRP 457 warrant curve">`;
+    s += `<rect width="${W}" height="${H}" fill="#faf9f5" rx="6"/>`;
+    s += `<text x="${padL}" y="22" font-size="12.5" font-weight="600" fill="#17181a">${isLeft ? 'Left-Turn' : 'Right-Turn'} Warrant Curve (${res.lanes}-Lane) — ${esc(res.status)}</text>`;
+
+    // Grid & axes
+    for (let i = 0; i <= 4; i++) {
+      const gx = padL + (pW * i) / 4, gy = padT + (pH * i) / 4;
+      s += `<line x1="${gx}" y1="${padT}" x2="${gx}" y2="${padT + pH}" stroke="#e6e2d6" stroke-width="1"/>`;
+      s += `<line x1="${padL}" y1="${gy}" x2="${padL + pW}" y2="${gy}" stroke="#e6e2d6" stroke-width="1"/>`;
+      s += `<text x="${gx}" y="${padT + pH + 14}" text-anchor="middle" font-size="10" fill="#56585c">${Math.round((xMax * i) / 4)}</text>`;
+      s += `<text x="${padL - 6}" y="${gy + 3}" text-anchor="end" font-size="10" fill="#56585c">${Math.round(yMax * (1 - i / 4))}</text>`;
+    }
+    s += `<rect x="${padL}" y="${padT}" width="${pW}" height="${pH}" fill="none" stroke="#c8c4b8" stroke-width="1"/>`;
+
+    // Warrant curve
+    if (curvePts.length > 1) {
+      const d = curvePts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${sx(x).toFixed(1)},${sy(Math.min(y, yMax)).toFixed(1)}`).join(' ');
+      s += `<path d="${d}" fill="none" stroke="#1f4e5f" stroke-width="2.2"/>`;
+    }
+
+    // Operating point
+    const cx = sx(ptX), cy = sy(ptY);
+    s += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="${ptCol}" stroke="#ffffff" stroke-width="1.5"/>`;
+    s += `<text x="${Math.min(cx + 8, W - 120)}" y="${Math.max(cy - 8, padT + 12)}" font-size="10.5" font-weight="600" fill="${ptCol}">Site (${fmt(ptX, 0)}, ${fmt(ptY, 0)})</text>`;
+
+    s += `<text x="${padL + pW / 2}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="#56585c">${xLabel}</text>`;
+    s += `<text x="14" y="${padT + pH / 2}" text-anchor="middle" font-size="10.5" fill="#56585c" transform="rotate(-90 14 ${padT + pH / 2})">${yLabel}</text>`;
     s += `</svg>`;
     return s;
   }

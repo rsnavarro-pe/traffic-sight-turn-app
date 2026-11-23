@@ -18,6 +18,7 @@
     isd: {
       speed: '30',
       vehicle: 'passenger',
+      accessType: 'full',
       majorLanes: '2',
       lanesCrossed: '2',
       gradePct: '0',
@@ -85,6 +86,25 @@
     turnLeft: { approach: 'EB Baker Ave E (2027 Total)', lanes: '2', speed: '30', share: '12.3', advance: '236', oppose: '200', leftTurns: '29', turnTime: '3.0', gap: '5.0', clear: '1.9' },
     turnRight: { approach: 'WB Baker Ave E (2027 Total)', lanes: '2', speed: '30', volume: '229', turns: '29' },
     geom: { speed: '30', turnVolume: '29', controlType: 'unsignalized', cycleSec: '90', vehLengthFt: '25', bayWidthFt: '12', taperFt: '50' }
+  };
+
+  const FOUR_LANE_EXAMPLE = {
+    project: {
+      title: '4-Lane Divided Suburban Arterial — Commercial Driveway',
+      location: 'US-27 & Commercial Access, Polk County, FL',
+      jurisdiction: 'FDOT FDM 212.11 / NCHRP 457',
+      analyst: 'RSN',
+      date: '2026-11-23'
+    },
+    isd: {
+      speed: '45', vehicle: 'single_unit', majorLanes: '4', lanesCrossed: '3',
+      gradePct: '2', majorGradePct: '3', setbackFt: '14.5', laneWidthFt: '12', medianWidthFt: '22',
+      obsLeftX: '220', obsLeftY: '18', obsRightX: '260', obsRightY: '24'
+    },
+    dsd: { speed: '45', area: 'suburban', prt: '6.0', activity: 'right_in', speedReductionPct: '20', decelRate: '9.9' },
+    turnLeft: { approach: 'NB US-27 Left Turn', lanes: '4', speed: '45', share: '9.2', advance: '650', oppose: '720', leftTurns: '60', turnTime: '4.0', gap: '6.0', clear: '1.9' },
+    turnRight: { approach: 'SB US-27 Right Turn', lanes: '4', speed: '45', volume: '720', turns: '85' },
+    geom: { speed: '45', turnVolume: '85', controlType: 'unsignalized', cycleSec: '90', vehLengthFt: '40', bayWidthFt: '12', taperFt: '50' }
   };
 
   let appState = structuredClone(DEFAULT_STATE);
@@ -165,7 +185,7 @@
           <div><span>Left-Turn ISD (Case B1)</span><strong>${fmt(isd.isdLeft, 1)} ft</strong><small>t<sub>g</sub> = ${fmt(isd.tgLeft, 2)} s</small></div>
           <div><span>Right-Turn ISD (Case B2)</span><strong>${fmt(isd.isdRight, 1)} ft</strong><small>t<sub>g</sub> = ${fmt(isd.tgRight, 2)} s</small></div>
           <div><span>Crossing ISD (Case B3)</span><strong>${fmt(isd.isdCross, 1)} ft</strong><small>t<sub>g</sub> = ${fmt(isd.tgCross, 2)} s</small></div>
-          <div><span>Stopping SD (SSD ref)</span><strong>${fmt(isd.ssd, 1)} ft</strong><small>t = 2.5 s, a = 11.2 ft/s²</small></div>
+          <div><span>Stopping SD (Controlling)</span><strong>${fmt(isd.ssd, 1)} ft</strong><small>${Math.abs(isd.ssdDowngrade - isd.ssdUpgrade) > 0.5 ? `Down ${fmt(isd.ssdDowngrade, 0)} / Up ${fmt(isd.ssdUpgrade, 0)} ft` : 't = 2.5 s, a = 11.2 ft/s²'}</small></div>
         </div>
         <p class="small muted">Triangle minor-road vertices: Left-looking <strong>a = ${fmt(isd.aLeftLook, 1)} ft</strong> (b = ${fmt(isd.bLeftLook, 0)} ft) · Right-looking <strong>a = ${fmt(isd.aRightLook, 1)} ft</strong> (b = ${fmt(isd.bRightLook, 0)} ft).</p>
       `;
@@ -214,12 +234,12 @@
     const ltBox = $('turn-result-left');
     ltBox.textContent = [leftTurn.status, Number.isFinite(leftTurn.limit) ? `${leftTurn.metricLabel}: ${fmt(leftTurn.limit, 1)} veh/h` : '', leftTurn.note].filter(Boolean).join(' · ');
     ltBox.classList.toggle('met', !!leftTurn.warranted);
-    $('turn-svg-left').innerHTML = window.SightTurnDiagrams.turnWarrantSvg('left', leftTurn);
+    $('turn-svg-left').innerHTML = window.SightTurnDiagrams.turnWarrantSvg('left', leftTurn, appState.turnLeft);
 
     const rtBox = $('turn-result-right');
     rtBox.textContent = [rightTurn.status, Number.isFinite(rightTurn.limit) ? `${rightTurn.metricLabel}: ${fmt(rightTurn.limit, 1)} veh/h` : '', rightTurn.note].filter(Boolean).join(' · ');
     rtBox.classList.toggle('met', !!rightTurn.warranted);
-    $('turn-svg-right').innerHTML = window.SightTurnDiagrams.turnWarrantSvg('right', rightTurn);
+    $('turn-svg-right').innerHTML = window.SightTurnDiagrams.turnWarrantSvg('right', rightTurn, appState.turnRight);
 
     // Turn-lane geometry
     $('geom-cycle-wrap').hidden = appState.geom.controlType !== 'signal';
@@ -316,12 +336,60 @@
         appState.dsd.decelRate = String(window.SightEngine.recommendedDecelRate(Number(e.target.value) || 40));
         syncInputsFromState();
       }
+      if (bind === 'turnLeft.lanes') {
+        const is4 = e.target.value === '4';
+        appState.turnLeft.turnTime = is4 ? '4.0' : '3.0';
+        appState.turnLeft.gap = is4 ? '6.0' : '5.0';
+        syncInputsFromState();
+      }
+      if (bind === 'turnLeft.share' || bind === 'turnLeft.advance') {
+        const adv = Number(appState.turnLeft.advance);
+        const pct = Number(appState.turnLeft.share);
+        if (Number.isFinite(adv) && adv > 0 && Number.isFinite(pct) && pct >= 0) {
+          appState.turnLeft.leftTurns = String(Math.round(adv * pct / 100 * 10) / 10);
+          syncInputsFromState();
+        }
+      }
+      if (bind === 'turnLeft.leftTurns') {
+        const adv = Number(appState.turnLeft.advance);
+        const vl = Number(appState.turnLeft.leftTurns);
+        if (Number.isFinite(adv) && adv > 0 && Number.isFinite(vl) && vl >= 0 && vl < adv) {
+          appState.turnLeft.share = String((vl / adv * 100).toFixed(2));
+          syncInputsFromState();
+        }
+      }
       renderResults();
       saveState();
     });
 
     $('load-haines-example')?.addEventListener('click', () => {
       appState = structuredClone(HAINES_CITY_EXAMPLE);
+      syncInputsFromState();
+      renderResults();
+      saveState();
+    });
+
+    $('load-4lane-example')?.addEventListener('click', () => {
+      appState = structuredClone(FOUR_LANE_EXAMPLE);
+      syncInputsFromState();
+      renderResults();
+      saveState();
+    });
+
+    $('sync-geom-left')?.addEventListener('click', () => {
+      appState.geom.speed = appState.turnLeft.speed || appState.isd.speed;
+      const vl = Number(appState.turnLeft.leftTurns);
+      const adv = Number(appState.turnLeft.advance);
+      const pct = Number(appState.turnLeft.share);
+      appState.geom.turnVolume = Number.isFinite(vl) && vl > 0 ? String(Math.round(vl)) : (Number.isFinite(adv) && Number.isFinite(pct) ? String(Math.round(adv * pct / 100)) : appState.geom.turnVolume);
+      syncInputsFromState();
+      renderResults();
+      saveState();
+    });
+
+    $('sync-geom-right')?.addEventListener('click', () => {
+      appState.geom.speed = appState.turnRight.speed || appState.isd.speed;
+      appState.geom.turnVolume = appState.turnRight.turns || appState.geom.turnVolume;
       syncInputsFromState();
       renderResults();
       saveState();
@@ -364,7 +432,16 @@
     $('summary-copy')?.addEventListener('click', async () => {
       const md = buildSummaryMarkdown(computeAll());
       await navigator.clipboard?.writeText(md);
-      $('summary-status').textContent = 'Summary copied to clipboard.';
+      $('summary-status').textContent = 'Markdown summary copied to clipboard.';
+    });
+    $('summary-copy-html')?.addEventListener('click', async () => {
+      const html = $('summary-body').innerHTML;
+      if (navigator.clipboard?.write && window.ClipboardItem) {
+        await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([$('summary-body').innerText], { type: 'text/plain' }) })]);
+      } else {
+        await navigator.clipboard?.writeText(html);
+      }
+      $('summary-status').textContent = 'Formatted summary table copied for Word / Docs.';
     });
     $('summary-download')?.addEventListener('click', () => {
       downloadFile(buildSummaryMarkdown(computeAll()), 'text/markdown', 'sight-turn-summary.md');
