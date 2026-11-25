@@ -10,12 +10,32 @@
 <a class="skip-link" href="#project">Skip to workspace</a>
 <div class="container">
   <header class="brand-bar" aria-label="Application header">
-    <div class="brand-mark" id="brand-mark">RSN</div>
+    <div class="brand-id">
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-drawer"><span aria-hidden="true">☰</span></button>
+      <div class="brand-mark" id="brand-mark">RSN</div>
+    </div>
     <div class="brand-copy">
       <div class="brand-product" id="brand-product">Sight Distance &amp; Turning Lane Analysis</div>
       <div class="brand-sub" id="build-info">AASHTO / FDOT FDM 212.11 · Florida Greenbook · NCHRP Report 457</div>
     </div>
   </header>
+
+  <div class="nav-backdrop" id="nav-backdrop" hidden></div>
+  <aside class="nav-drawer" id="nav-drawer" aria-label="Navigation menu" aria-hidden="true">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-title">Sections</span>
+      <button type="button" class="nav-close" id="nav-close" aria-label="Close navigation menu">&times;</button>
+    </div>
+    <nav class="workspace-nav" aria-label="Workflow sections">
+      <a href="#project" class="is-current">1. Project</a>
+      <a href="#sec-isd">2. Sight Triangle</a>
+      <a href="#sec-dsd">3. Decision SD</a>
+      <a href="#sec-turns">4. Turn Warrants</a>
+      <a href="#sec-geom">5. Bay Geometry</a>
+      <a href="#sec-summary">6. Summary</a>
+      <a href="#sec-selfcheck">Checks</a>
+    </nav>
+  </aside>
 
   <div class="error-banner" id="error-banner" role="alert" hidden></div>
 
@@ -36,16 +56,6 @@
       <div><span>Turn-lane screen</span><strong id="hero-turns">—</strong></div>
     </div>
   </header>
-
-  <nav class="workspace-nav" aria-label="Workflow sections">
-    <a href="#project" class="is-current">1. Project</a>
-    <a href="#sec-isd">2. Sight Triangle</a>
-    <a href="#sec-dsd">3. Decision SD</a>
-    <a href="#sec-turns">4. Turn Warrants</a>
-    <a href="#sec-geom">5. Bay Geometry</a>
-    <a href="#sec-summary">6. Summary</a>
-    <a href="#sec-selfcheck">Checks</a>
-  </nav>
 
   <section id="project">
     <div class="workspace-heading">

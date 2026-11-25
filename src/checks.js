@@ -80,7 +80,37 @@
     return results;
   }
 
+  function setupNavDrawer() {
+    const toggle = document.getElementById('nav-toggle');
+    const drawer = document.getElementById('nav-drawer');
+    const closeBtn = document.getElementById('nav-close');
+    const backdrop = document.getElementById('nav-backdrop');
+    if (!toggle || !drawer) return;
+
+    function setOpen(open) {
+      drawer.classList.toggle('is-open', open);
+      drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (backdrop) backdrop.hidden = !open;
+      if (open) closeBtn?.focus();
+    }
+
+    toggle.addEventListener('click', () => setOpen(!drawer.classList.contains('is-open')));
+    closeBtn?.addEventListener('click', () => { setOpen(false); toggle.focus(); });
+    backdrop?.addEventListener('click', () => setOpen(false));
+    drawer.querySelectorAll('.workspace-nav a').forEach(link => {
+      link.addEventListener('click', () => setOpen(false));
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && drawer.classList.contains('is-open')) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    setupNavDrawer();
     setupNavHighlight();
     document.getElementById('run-selfcheck')?.addEventListener('click', () => {
       const results = runSelfChecks();
